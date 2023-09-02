@@ -1,28 +1,35 @@
 #!/bin/bash
 
 # Script to upgrade the fedora installation
-declare -i THISVER=`cat /etc/redhat-release | cut -d" " -f3`
-declare -i NEXTVER=0
-NEXTVER=$THISVER+1
-
-echo "running 'dnf upgrade --refresh' for Fedora $THISVER"
-dnf upgrade --refresh
+. /etc/os-release
+echo "Running: $PRETTY_NAME"
 
 # need to check if there is a next version availale?
-#
-#
-#dnf install dnf-plugin-system-upgrade
-echo "Upgrading $THISVER to $NEXTVER"
-echo "downloading all the packages..."
-#dnf system-upgrade clean
-dnf system-upgrade download --releasever=$NEXTVER --allowerasing
+# based on: https://discussion.fedoraproject.org/t/is-it-possible-to-verify-that-a-major-release-is-already-released/78713
+LATEST_VER="$(curl -s "https://fedoraproject.org/releases.json" | jq -r '[.[].version | select(test("^\\d*$"))] | max')"
 
-# Rebuild the boot config
-echo  "Rebuilding the grub configuration..."
-/etc/cron.daily/rebuild_grub_config.pl
+echo "Curent is: $VERSION_ID, latest is $LATEST_VER."
+if [ "$LATEST_VER" -eq "$VERSION_ID" ]; then
+    echo "Already at latest version, no need to upgrade."
+    echo "Exiting..."
+    exit 0
+else
+    echo "running 'dnf upgrade --refresh' for Fedora $VERSION_ID"
+    dnf upgrade --refresh
 
-echo "Now do: # dnf system-upgrade reboot"
-# To remove cached metadata and transaction use 'dnf system-upgrade clean'
-# The downloaded packages were saved in cache until the next successful transaction.
-# You can remove cached packages by executing 'dnf clean packages'.
-#dnf system-upgrade reboot
+    #dnf install dnf-plugin-system-upgrade
+    echo "Upgrading $VERSION_ID to $LATEST_VER"
+    echo "downloading all the packages..."
+    # dnf system-upgrade clean
+    dnf system-upgrade download --releasever=$LATEST_VER --allowerasing
+
+    # Rebuild the boot config
+    echo  "Rebuilding the grub configuration..."
+    /etc/cron.daily/rebuild_grub_config.pl
+
+    echo "To remove cached metadata and transaction use 'dnf system-upgrade clean'"
+    echo "The downloaded packages were saved in cache until the next successful transaction."
+    echo "You can remove cached packages by executing 'dnf clean packages'."
+    echo "Now do: # dnf system-upgrade reboot"
+    #dnf system-upgrade reboot
+fi
