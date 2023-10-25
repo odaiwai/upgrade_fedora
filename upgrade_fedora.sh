@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # Script to upgrade the fedora installation
+# file below has version and URL information about
+# the current release. Any variables not defined here
+# come from there.
 . /etc/os-release
 echo "Running: $PRETTY_NAME"
 
 # need to check if there is a next version availale?
 # based on: https://discussion.fedoraproject.org/t/is-it-possible-to-verify-that-a-major-release-is-already-released/78713
-LATEST_VER="$(curl -s "https://fedoraproject.org/releases.json" | jq -r '[.[].version | select(test("^\\d*$"))] | max')"
-AVAIL="$(curl -s "https://fedoraproject.org/releases.json" | jq -r [.[].version] | uniq)"
+LATEST_VER="$(curl -s "$HOME_URL/releases.json" | jq -r '[.[].version | select(test("^\\d*$"))] | max')"
+AVAIL="$(curl -s "$HOME_URL/releases.json" | jq -r [.[].version] | uniq)"
 
 echo "Available Versions: $AVAIL"
 echo "Current is: $VERSION_ID, latest is $LATEST_VER."
